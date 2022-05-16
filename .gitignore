@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+__pycache__/*
+*.py[cod]
+*.vscode
+# C extensions
+*.so
+*.pyc
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+#Enviornment
+.env
+.venv
+.vs
+venv/
+envEC/
+ramz_venv/
+*.swp
+static
+media/**
+/env
