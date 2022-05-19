@@ -3,6 +3,9 @@ import graphene
 from graphene_django import DjangoObjectType
 from ingredients.models import Category
 import copy
+from graphql_jwt.decorators import login_required
+
+
 class CategoryNode(DjangoObjectType):    
     id = graphene.ID(source='pk', required=True)
 
@@ -12,6 +15,7 @@ class CategoryNode(DjangoObjectType):
         interfaces = (relay.Node, )
     
     @staticmethod
+    @login_required
     def from_global_id(cls, global_id):
         return global_id
 

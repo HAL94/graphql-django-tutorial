@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -38,7 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'graphene_django',
-    'ingredients'
+    'ingredients',
+    'users',
+    # refresh tokens are optional
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
+    'graphql_auth',
+    'django_filters',
+    'graphql_jwt'
 ]
 
 MIDDLEWARE = [
@@ -125,5 +132,48 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GRAPHENE = {
-    'SCHEMA': 'core.schema.schema'
+    'SCHEMA': 'core.schema.schema',
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
+
+# tell django about the new authentication mechanisim
+AUTHENTICATION_BACKENDS = [
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'django.contrib.auth.backends.ModelBackend'
+]
+
+
+GRAPHQL_JWT = {
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_EXPIRATION_DELTA": timedelta(minutes=5),
+    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7),
+#     # optional
+    # "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+
+    # "JWT_ALLOW_ANY_CLASSES": [
+        # "users.schema.schema.RegisterMutation",
+        # "users.schema.schema.LoginMutation",
+        # "graphql_auth.mutations.VerifyAccount",
+        # "graphql_auth.mutations.ObtainJSONWebToken"
+    # ],
+}
+
+# GRAPHQL_AUTH = {
+#     'REGISTER_MUTATION_FIELDS': [        
+#         'username', 
+#         'password',
+#         'auth_method'
+#     ],
+#     'REGISTER_MUTATION_FIELDS_OPTIONAL': ['password1', 'password2'],
+#     # You can set the graphene base scalars:
+#     'REGISTER_MUTATION_FIELDS': {
+#         "auth_method": "String",
+#         "username": "String",
+#         "password": "String",
+#     }
+# }
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+AUTH_USER_MODEL = 'users.CustomUser'

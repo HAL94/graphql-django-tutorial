@@ -17,7 +17,7 @@ class IngredientNode(DjangoObjectType):
         }
         interfaces = (relay.Node, )
     
-    @staticmethod
+    @staticmethod    
     def from_global_id(cls, global_id):
         return global_id
 
