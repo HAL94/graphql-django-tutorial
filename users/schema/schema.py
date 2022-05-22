@@ -1,8 +1,10 @@
 # users.schema.schema.py
 import graphene
 from graphene_django import DjangoObjectType
-from graphql_jwt.shortcuts import get_token, create_refresh_token
-
+from graphql_jwt.shortcuts import get_token, create_refresh_token, get_user_by_token
+from django.contrib.auth import get_user_model
+from graphql_jwt.mixins import RefreshMixin
+from graphql_jwt.utils import jwt_decode
 
 from users.models import CustomUser
 from core.utils import AppError, AuthMethod
@@ -50,22 +52,12 @@ class RegisterMutation(graphene.Mutation ):
             errors.append(AppError(error_title="User", error_description="'User Already Exists'"))
             return RegisterMutation(success=False,errors=errors)
         
-        found_user = CustomUser()
-        found_user.auth_method = chosen_method
-        found_user.username = username
-        found_user.set_password(password)
+        user = get_user_model().objects.create_user(auth_method=chosen_method, username=username, password=password)        
 
-        if chosen_method == AuthMethod.EMAIL:
-            found_user.email = username
-        elif chosen_method == AuthMethod.MOBILE:
-            found_user.phone = username
-        
+        token = get_token(user)
+        refresh_token = create_refresh_token(user)
 
-        found_user.save()
-        token = get_token(found_user)
-        refresh_token = create_refresh_token(found_user)
-
-        return RegisterMutation(user=found_user, token=token, refresh_token=refresh_token, success=True, errors=None)
+        return RegisterMutation(user=user, token=token, refresh_token=refresh_token, success=True, errors=None)
 
 class LoginMutation(graphene.Mutation):
     user = graphene.Field(UserType)
@@ -80,7 +72,7 @@ class LoginMutation(graphene.Mutation):
     def mutate(self, info, **input):
         errors = []
 
-        if 'username' not in input or 'password' not in input:
+        if input['username'] == '' or input['password'] == '':
             errors.append(AppError(error_title="Username Or Password", error_description="Username AND Password must be BOTH passed"))
             return LoginMutation(token=None, refresh_token=None, user=None, errors=errors)
         
@@ -101,13 +93,32 @@ class LoginMutation(graphene.Mutation):
         refresh_token = create_refresh_token(found_user)
         return LoginMutation(user=found_user, token=token, refresh_token=refresh_token)
 
+class RefreshMutation(RefreshMixin, graphene.Mutation):
+    token = graphene.Field(graphene.String)
+    refresh_token = graphene.Field(graphene.String)
+
+    class Arguments(RefreshMixin.Fields):
+        """ """
+    # from graphql_jwt.refresh_token.models import RefreshToken
+    def mutate(self, info, **input):
+        print('received refresh_token', input)
+        payload = get_user_by_token(input['token'])
+        print('is this the user?', payload)
+        # print('decoded', jwt_decode(input['token']))
+        
+        token = get_token(payload)
+        refresh_token = create_refresh_token(payload)
+        return RefreshMutation(token=token, refresh_token=refresh_token)
+    
+        
 
 class Mutation(graphene.ObjectType):
     login = LoginMutation.Field()
     register = RegisterMutation.Field()
     verify_token = graphql_jwt.Verify.Field()
-    refresh_token = graphql_jwt.Refresh.Field()
-    revoke_token = graphql_jwt.Revoke.Field()    
+    # refresh_token = graphql_jwt.Refresh.Field()
+    refresh_token = RefreshMutation.Field()
+    revoke_token = graphql_jwt.Revoke.Field()
 
 
 class Query(graphene.ObjectType):
