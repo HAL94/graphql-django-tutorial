@@ -3,6 +3,7 @@ import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
 from ingredients.models import Category, Ingredient
+from graphql_jwt.decorators import login_required
 
 class IngredientNode(DjangoObjectType):
     id = graphene.ID(source='pk', required=True)
@@ -17,7 +18,7 @@ class IngredientNode(DjangoObjectType):
         }
         interfaces = (relay.Node, )
     
-    @staticmethod    
+    @staticmethod  
     def from_global_id(cls, global_id):
         return global_id
 
@@ -28,7 +29,8 @@ class AddIngredientMutation(graphene.Mutation):
         name = graphene.String()
         notes = graphene.String()
         category_id = graphene.Int()
-    
+
+    @login_required
     def mutate(self, info, **input):
         ingredient = Ingredient()
         ingredient.name = input['name']
@@ -52,6 +54,7 @@ class UpdateIngredientMutation(graphene.Mutation):
         notes = graphene.String()
         category_id = graphene.Int()
     
+    @login_required
     def mutate(self, info, **input):
         if 'ingredient_id' not in input:
             return Exception('Ingredient ID passed is invalid')
@@ -89,6 +92,7 @@ class DeleteIngredientMutation(graphene.Mutation):
     class Arguments:
         ingredient_id = graphene.Int()
     
+    @login_required
     def mutate(self, info, **input):
         if input['ingredient_id'] is None:
             return Exception('Ingredient ID passed is invalid')

@@ -4,7 +4,6 @@ from django.db import models
 from django.utils import timezone
 
 from core.utils import AUTH_METHOD_CHOICES, AuthMethod
-# Create your models here.
 import phonenumbers
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -29,7 +28,7 @@ class UserManager(BaseUserManager):
 
         
         user = self.model(auth_method=auth_method, username=username, email=email, phone=phone)
-
+        
         if auth_method == AuthMethod.EMAIL:
             email_validator = ValidateEmail(username)
             if not email_validator.is_valid():
@@ -42,10 +41,12 @@ class UserManager(BaseUserManager):
                 raise ValueError('Mobile Phone provided is invalid')
             user.phone = username
 
-        user.is_active = False
+        user.is_active = True
         user.set_password(password)
         user.save(using=self._db)
         return user
+
+    
 
     def create_superuser(self, username, password):
         """

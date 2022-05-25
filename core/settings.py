@@ -135,6 +135,7 @@ GRAPHENE = {
     'SCHEMA': 'core.schema.schema',
     'MIDDLEWARE': [
         'graphql_jwt.middleware.JSONWebTokenMiddleware',
+        # 'users.middleware.AuthorizationGraphQLMiddleware',
     ],
 }
 
@@ -147,33 +148,20 @@ AUTHENTICATION_BACKENDS = [
 
 GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
-    "JWT_EXPIRATION_DELTA": timedelta(seconds=30),
-    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(minutes=1),
-#     # optional
-    # "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-
-    # "JWT_ALLOW_ANY_CLASSES": [
-        # "users.schema.schema.RegisterMutation",
-        # "users.schema.schema.LoginMutation",
-        # "graphql_auth.mutations.VerifyAccount",
-        # "graphql_auth.mutations.ObtainJSONWebToken"
-    # ],
+    "JWT_EXPIRATION_DELTA": timedelta(minutes=1),    
+    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(seconds=30),
+    "JWT_ALLOW_ARGUMENT": True,
+    "JWT_VERIFY": True,    
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_ALLOW_ANY_CLASSES": [
+        "users.schema.schema.RegisterMutation",
+        "users.schema.schema.LoginMutation",
+        "users.schema.schema.RefreshMutation",
+        "graphql_jwt.mutations.Verify",
+    ],
 }
 
-# GRAPHQL_AUTH = {
-#     'REGISTER_MUTATION_FIELDS': [        
-#         'username', 
-#         'password',
-#         'auth_method'
-#     ],
-#     'REGISTER_MUTATION_FIELDS_OPTIONAL': ['password1', 'password2'],
-#     # You can set the graphene base scalars:
-#     'REGISTER_MUTATION_FIELDS': {
-#         "auth_method": "String",
-#         "username": "String",
-#         "password": "String",
-#     }
-# }
+
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 AUTH_USER_MODEL = 'users.CustomUser'

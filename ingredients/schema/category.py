@@ -1,8 +1,8 @@
-from graphene import relay
+import copy
 import graphene
+from graphene import relay
 from graphene_django import DjangoObjectType
 from ingredients.models import Category
-import copy
 from graphql_jwt.decorators import login_required
 
 
@@ -13,9 +13,8 @@ class CategoryNode(DjangoObjectType):
         model = Category
         filter_fields = ['name', 'ingredients']
         interfaces = (relay.Node, )
-    
+        
     @staticmethod
-    @login_required
     def from_global_id(cls, global_id):
         return global_id
 
@@ -26,6 +25,7 @@ class AddCategoryMutation(graphene.Mutation):
     class Arguments:
         name = graphene.String()    
     
+    @login_required
     def mutate(self, info, **input):
         category = Category()
         
@@ -47,7 +47,8 @@ class UpdateCategoryMutation(graphene.Mutation):
     @staticmethod
     def from_global_id(cls, global_id):
         return global_id
-
+    
+    @login_required
     def mutate(self, info, **input):
         if input['category_id'] is None:
             return Exception('Category ID passed is invalid')
@@ -69,7 +70,7 @@ class DeleteCategoryMutation(graphene.Mutation):
     class Arguments:
         category_id = graphene.Int()
     
-    
+    @login_required
     def mutate(self, info, **input):
         id = input['category_id']
         if id is None:
