@@ -5,6 +5,8 @@ from graphene_django import DjangoObjectType
 from ingredients.models import Category
 from graphql_jwt.decorators import login_required
 
+from users.decorators import user_owns
+
 
 class CategoryNode(DjangoObjectType):    
     id = graphene.ID(source='pk', required=True)
@@ -33,6 +35,7 @@ class AddCategoryMutation(graphene.Mutation):
             return Exception('Name provided is invalid')
         
         category.name = input['name']
+        category.user = info.context.user
         category.save()
         return AddCategoryMutation(category=category)
 
@@ -49,6 +52,7 @@ class UpdateCategoryMutation(graphene.Mutation):
         return global_id
     
     @login_required
+    @user_owns(Category, 'category_id')
     def mutate(self, info, **input):
         if input['category_id'] is None:
             return Exception('Category ID passed is invalid')
@@ -71,6 +75,7 @@ class DeleteCategoryMutation(graphene.Mutation):
         category_id = graphene.Int()
     
     @login_required
+    @user_owns(Category, 'category_id')
     def mutate(self, info, **input):
         id = input['category_id']
         if id is None:

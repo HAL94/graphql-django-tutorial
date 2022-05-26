@@ -1,5 +1,6 @@
 
 import re
+import uuid
 from django.db import models
 from django.utils import timezone
 
@@ -62,6 +63,7 @@ class UserManager(BaseUserManager):
     
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     auth_method = models.CharField(max_length=10, choices=AUTH_METHOD_CHOICES, blank=True)
     username = models.CharField(blank=False, max_length=255, verbose_name="username", unique=True)
     phone = models.CharField(blank=True, verbose_name='phone', max_length=17, null=True)

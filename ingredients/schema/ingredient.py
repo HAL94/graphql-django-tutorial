@@ -4,7 +4,7 @@ from graphene import relay
 from graphene_django import DjangoObjectType
 from ingredients.models import Category, Ingredient
 from graphql_jwt.decorators import login_required
-
+from users.decorators import user_owns
 class IngredientNode(DjangoObjectType):
     id = graphene.ID(source='pk', required=True)
     
@@ -31,7 +31,8 @@ class AddIngredientMutation(graphene.Mutation):
         category_id = graphene.Int()
 
     @login_required
-    def mutate(self, info, **input):
+    @user_owns(Category, 'category_id')
+    def mutate(self, info, *args, **input):        
         ingredient = Ingredient()
         ingredient.name = input['name']
         ingredient.notes = input['notes']
@@ -41,6 +42,7 @@ class AddIngredientMutation(graphene.Mutation):
             return Exception('ID passed is invalid')
         
         ingredient.category = category
+        ingredient.user = info.context.user
         ingredient.save()
 
         return AddIngredientMutation(ingredient=ingredient)
@@ -55,6 +57,7 @@ class UpdateIngredientMutation(graphene.Mutation):
         category_id = graphene.Int()
     
     @login_required
+    @user_owns(Category, 'category_id')
     def mutate(self, info, **input):
         if 'ingredient_id' not in input:
             return Exception('Ingredient ID passed is invalid')
@@ -93,6 +96,7 @@ class DeleteIngredientMutation(graphene.Mutation):
         ingredient_id = graphene.Int()
     
     @login_required
+    @user_owns(Category, 'category_id')
     def mutate(self, info, **input):
         if input['ingredient_id'] is None:
             return Exception('Ingredient ID passed is invalid')

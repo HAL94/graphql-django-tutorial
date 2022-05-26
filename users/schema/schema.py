@@ -10,6 +10,8 @@ from graphql_jwt.settings import jwt_settings
 from graphql_jwt.refresh_token.models import RefreshToken
 from graphql_jwt.exceptions import JSONWebTokenError, JSONWebTokenExpired
 from core.utils import AppError, AuthMethod
+from calendar import timegm
+import time
 
 class UserType(DjangoObjectType):
     id = graphene.ID(source='pk', required=True)
@@ -110,6 +112,7 @@ class RefreshMutation(RefreshMixin, graphene.Mutation):
     token = graphene.Field(graphene.String)
     refresh_token = graphene.Field(graphene.String)
     errors = graphene.List(AppError)
+    refresh_token_expires = graphene.Field(graphene.Int)
 
     class Arguments(RefreshMixin.Fields):
         pass
@@ -123,14 +126,17 @@ class RefreshMutation(RefreshMixin, graphene.Mutation):
             if refresh_token.is_expired():
                 raise JSONWebTokenExpired('Refresh token is expired')
             
-            decoded = jwt_settings.JWT_PAYLOAD_HANDLER(refresh_token.user, context)        
-            
+            decoded = jwt_settings.JWT_PAYLOAD_HANDLER(refresh_token.user, context)
             user = get_user_model().objects.get(username=decoded['username'])
             rt = RefreshToken.objects.filter(user_id=user.id).latest("created")
             rt.delete()
             token = get_token(user)
             refresh_token = create_refresh_token(user)        
-            return RefreshMutation(token=token, refresh_token=refresh_token, payload=jwt_decode(token))            
+            orig_iat = time.mktime(refresh_token.created.timetuple())            
+            print(refresh_token.created, orig_iat, jwt_settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds())
+            exp = orig_iat + jwt_settings.JWT_REFRESH_EXPIRATION_DELTA.total_seconds()
+
+            return RefreshMutation(token=token, refresh_token=refresh_token, refresh_token_expires=exp, payload=jwt_decode(token))            
 
         except JSONWebTokenExpired:
             return RefreshMutation(errors=[AppError(error_title="RefreshToken", error_description="Refresh Token Expired")])
