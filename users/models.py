@@ -7,6 +7,7 @@ from django.utils import timezone
 from core.utils import AUTH_METHOD_CHOICES, AuthMethod
 import phonenumbers
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from users.utils import send_twilio_otp
 
 class ValidateEmail(object):
     def __init__(self,  email=None) :
@@ -40,6 +41,7 @@ class UserManager(BaseUserManager):
             number = phonenumbers.parse(username)
             if not phonenumbers.is_valid_number(number):
                 raise ValueError('Mobile Phone provided is invalid')
+            send_twilio_otp(username)
             user.phone = username
 
         user.is_active = True

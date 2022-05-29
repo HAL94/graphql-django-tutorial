@@ -13,6 +13,7 @@ from core.utils import AppError, AuthMethod
 from calendar import timegm
 import time
 
+
 class UserType(DjangoObjectType):
     id = graphene.ID(source='pk', required=True)
     class Meta:
@@ -52,6 +53,7 @@ class RegisterMutation(graphene.Mutation ):
                 return RegisterMutation(success=False,errors=[AppError(error_title="User", error_description="'User Already Exists'")])
             
             user = get_user_model().objects.create_user(auth_method=chosen_method, username=username, password=password)        
+
 
             token = get_token(user)
             refresh_token = create_refresh_token(user)

@@ -1,7 +1,7 @@
 import graphene
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
-from ingredients.models import Category
+from ingredients.models import Category, Ingredient
 
 from ingredients.schema.category import AddCategoryMutation, CategoryNode, DeleteCategoryMutation, UpdateCategoryMutation
 from ingredients.schema.ingredient import AddIngredientMutation, DeleteIngredientMutation, IngredientNode, UpdateIngredientMutation
@@ -18,6 +18,10 @@ class Query(graphene.ObjectType):
 
     ingredient = relay.Node.Field(IngredientNode)
     all_ingredients = DjangoFilterConnectionField(IngredientNode)
+
+    @login_required
+    def resolve_all_ingredients(root, info, **kwargs):
+        return Ingredient.objects.filter(user=info.context.user)
 
 class Mutation(graphene.ObjectType):
     add_ingredient = AddIngredientMutation.Field()
