@@ -10,9 +10,8 @@ from graphql_jwt.settings import jwt_settings
 from graphql_jwt.refresh_token.models import RefreshToken
 from graphql_jwt.exceptions import JSONWebTokenError, JSONWebTokenExpired
 from core.utils import AppError, AuthMethod
-from calendar import timegm
 import time
-
+from users.utils import create_otp_token, OTP_EXP_TIME_MIN, validate_otp_and_token
 
 class UserType(DjangoObjectType):
     id = graphene.ID(source='pk', required=True)
@@ -28,14 +27,40 @@ class UserType(DjangoObjectType):
     def from_global_id(cls, global_id):
         return global_id
 
-
-class RegisterMutation(graphene.Mutation ):    
+class VerifyOtpMutation(graphene.Mutation ):
+    access_token = graphene.String()
+    refresh_token = graphene.String()
     user = graphene.Field(UserType)
-    token = graphene.String()
     errors = graphene.List(AppError)
     success = graphene.Boolean()
 
-    refresh_token = graphene.String()
+    class Arguments:
+        otp = graphene.String(required=True)
+        register_token = graphene.String(required=True)
+    
+    def mutate(self, info, **input):
+        try:
+            otp = input['otp']
+            token = input['register_token']
+            print(f'received token {token}')
+            validate_otp_and_token(token, otp)
+            
+
+
+        except Exception as e:
+            print('something went wrong here', e)
+            raise ValueError(f'Error: {e}')
+
+
+class RegisterMutation(graphene.Mutation ):    
+    # user = graphene.Field(UserType)
+    register_token = graphene.String()
+    errors = graphene.List(AppError)
+    success = graphene.Boolean()
+    otp = graphene.String()
+    
+    exp_time_seconds = graphene.Int()
+    # refresh_token = graphene.String()
 
     class Arguments:
         auth_method = graphene.Enum.from_enum(AuthMethod)(required=True)
@@ -52,13 +77,14 @@ class RegisterMutation(graphene.Mutation ):
             if found_user is not None:                
                 return RegisterMutation(success=False,errors=[AppError(error_title="User", error_description="'User Already Exists'")])
             
-            user = get_user_model().objects.create_user(auth_method=chosen_method, username=username, password=password)        
+            user = get_user_model().objects.create_user(auth_method=chosen_method, username=username, password=password)
 
+            # token = get_token(user)            
+            otp_token_obj = create_otp_token(user)
+            # refresh_token = create_refresh_token(user)
 
-            token = get_token(user)
-            refresh_token = create_refresh_token(user)
-
-            return RegisterMutation(user=user, token=token, refresh_token=refresh_token, success=True, errors=None)
+            # return RegisterMutation(user=user, exp_time_seconds = exp_time_min*60, token=token, success=True, errors=None)
+            return RegisterMutation(exp_time_seconds = OTP_EXP_TIME_MIN*60, register_token=otp_token_obj['token'], otp=otp_token_obj['otp'], success=True, errors=None)
         except Exception as e:
             print('an error occured', e)
             return RegisterMutation(errors=[AppError(error_title="Unknown Error", error_description=e)])
@@ -94,8 +120,6 @@ class LoginMutation(graphene.Mutation):
             
             if not found_user.check_password(password):                
                 return LoginMutation(success=False, errors=[AppError(error_title="User Invalid", error_description="Could not validate the given credentials")])
-            
-            
 
             token = get_token(found_user)
             try:
@@ -145,15 +169,13 @@ class RefreshMutation(RefreshMixin, graphene.Mutation):
         except JSONWebTokenError:
             return RefreshMutation(errors=[AppError(error_title="RefreshToken", error_description="Invalid Refresh Token")])
         
-
-
 class Mutation(graphene.ObjectType):
     login = LoginMutation.Field()
     register = RegisterMutation.Field()
     refresh_token = RefreshMutation.Field()
+    verify_otp = VerifyOtpMutation.Field()
     verify_token = graphql_jwt.Verify.Field()
     revoke_token = graphql_jwt.Revoke.Field()
-
 
 class Query(graphene.ObjectType):
     me = graphene.Field(UserType)
@@ -163,8 +185,6 @@ class Query(graphene.ObjectType):
         if user.is_anonymous:
             raise Exception('Authentication Failure: Your must be signed in')
         return user
-
-
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

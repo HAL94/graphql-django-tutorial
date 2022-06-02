@@ -41,12 +41,12 @@ class UserManager(BaseUserManager):
             number = phonenumbers.parse(username)
             if not phonenumbers.is_valid_number(number):
                 raise ValueError('Mobile Phone provided is invalid')
-            send_twilio_otp(username)
+            # send_twilio_otp(username)
             user.phone = username
 
         user.is_active = True
         user.set_password(password)
-        user.save(using=self._db)
+        # user.save(using=self._db)
         return user
 
     

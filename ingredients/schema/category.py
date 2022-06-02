@@ -7,7 +7,6 @@ from graphql_jwt.decorators import login_required
 
 from users.decorators import user_owns
 
-
 class CategoryNode(DjangoObjectType):    
     id = graphene.ID(source='pk', required=True)
 

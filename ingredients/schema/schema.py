@@ -5,7 +5,7 @@ from ingredients.models import Category, Ingredient
 
 from ingredients.schema.category import AddCategoryMutation, CategoryNode, DeleteCategoryMutation, UpdateCategoryMutation
 from ingredients.schema.ingredient import AddIngredientMutation, DeleteIngredientMutation, IngredientNode, UpdateIngredientMutation
-
+from core.utils import redis_instance
 from graphql_jwt.decorators import login_required
 
 class Query(graphene.ObjectType):    
@@ -13,8 +13,16 @@ class Query(graphene.ObjectType):
     all_categories = DjangoFilterConnectionField(CategoryNode)
     
     @login_required
-    def resolve_all_categories(root, info, **kwargs):        
+    def resolve_all_categories(root, info, **kwargs):
         return Category.objects.filter(user=info.context.user)
+        # cats = redis_instance.get('cats')
+        
+        # if cats is not None:
+        #     return cats
+        # else:
+        #     cats = Category.objects.filter(user=info.context.user)
+        #     redis_instance.set('cats', cats)
+        #     return cats
 
     ingredient = relay.Node.Field(IngredientNode)
     all_ingredients = DjangoFilterConnectionField(IngredientNode)
